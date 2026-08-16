@@ -71,6 +71,11 @@
         border: 0.3em solid var(--window-border-color);
     }
 
+    h2 {
+        margin-top: 0em;
+        margin-bottom: 0.5em;
+    }
+
     #game-window {
 
         width: 80%;
@@ -137,8 +142,9 @@
 <body class="cutive-mono-regular">
 
 <div id="settings-window" class="window">
-    <label><input id="show-outlines-checkbox" type="checkbox" checked>show outlines</label>
-    <label><input id="mark-guessed-states-checkbox" type="checkbox" checked>mark guessed states</label>
+    <h2 class="cutive-mono-regular">Settings</h2>
+    <label><input id="show-outlines-checkbox" type="checkbox">show outlines</label>
+    <label><input id="mark-guessed-states-checkbox" type="checkbox">mark guessed states</label>
 </div>
 
 <div id="game-window" class="halftone window">
@@ -760,6 +766,31 @@ function newSettings() {
     }
 }
 
+const SETTING_STORAGE_PREFIX = "setting.";
+
+function readSettingsFromLocalStorage() {
+    const localStorageKeys = Object.keys(localStorage);
+    for (const storageKey of localStorageKeys) {
+        if (!storageKey.startsWith(SETTING_STORAGE_PREFIX)) continue;
+        const key = storageKey.slice(SETTING_STORAGE_PREFIX.length);
+        if (globalSettings[key] === undefined) {
+            localStorage.removeItem(storageKey);
+        } else {
+            const valueString = localStorage.getItem(storageKey);
+            const value = JSON.parse(valueString);
+            globalSettings[key] = value;
+        }
+    }
+}
+
+function saveSettingsToLocalStorage() {
+    for (const setting in globalSettings) {
+        const value = globalSettings[setting];
+        const valueString = JSON.stringify(value);
+        localStorage.setItem(`${SETTING_STORAGE_PREFIX}${setting}`, valueString);
+    }
+}
+
 const globalSettings = newSettings();
 
 /* end of Settings */
@@ -791,6 +822,7 @@ function updateTimerUi() {
     const checkbox = document.getElementById("show-outlines-checkbox");
     checkbox.addEventListener("change", () => {
         globalSettings.showOutlines = checkbox.checked;
+        saveSettingsToLocalStorage();
         if (game.status === GameStatus.NOT_STARTED) resetGame();
     });
 }
@@ -800,8 +832,21 @@ function updateTimerUi() {
     const checkbox = document.getElementById("mark-guessed-states-checkbox");
     checkbox.addEventListener("change", () => {
         globalSettings.markGuessedStates = checkbox.checked;
+        saveSettingsToLocalStorage();
         if (game.status === GameStatus.NOT_STARTED) resetGame();
     });
+}
+
+function syncCheckboxesWithSettings() {
+    {
+        const checkbox = document.getElementById("show-outlines-checkbox");
+        checkbox.checked = globalSettings.showOutlines;
+    }
+
+    {
+        const checkbox = document.getElementById("mark-guessed-states-checkbox");
+        checkbox.checked = globalSettings.markGuessedStates;
+    }
 }
 
 function rebuildGameUi() {
@@ -852,6 +897,7 @@ function resetGame() {
     game = newGame(globalSettings);
     clearGameResultUi();
     setNextGuessUi("");
+    updateTimerUi();
     rebuildGameUi();
 }
 
@@ -892,6 +938,10 @@ function guessAttempt(stateElement) {
 
     rebuildGameUi();
 }
+
+readSettingsFromLocalStorage();
+syncCheckboxesWithSettings();
+resetGame();
 
 </script>
 </body>
