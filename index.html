@@ -61,6 +61,10 @@
        /* filter: sepia(100%) saturate(300%) brightness(70%) hue-rotate(180deg); */
     }
 
+    input[type=checkbox] {
+        margin-right: 1em;
+    }
+
     .window {
         background-color: var(--window-background-color);
         border: 0.3em solid var(--window-border-color);
@@ -87,6 +91,9 @@
         position: absolute;
         top: 1em;
         right: 1em;
+
+        display: flex;
+        flex-direction: column;
     }
 
     #header {
@@ -128,7 +135,8 @@
 <body class="cutive-mono-regular">
 
 <div id="settings-window" class="window">
-    <input id="show-outlines-checkbox" type="checkbox" checked>show outlines</input>
+    <label><input id="show-outlines-checkbox" type="checkbox" checked>show outlines</label>
+    <label><input id="mark-guessed-states-checkbox" type="checkbox" checked>mark guessed states</label>
 </div>
 
 <div id="game-window" class="halftone window">
@@ -759,6 +767,7 @@ let game = newGame();
 function newSettings() {
     return {
         showOutlines: true,
+        markGuessedStates: true,
     }
 }
 
@@ -794,6 +803,12 @@ function updateTimerUi() {
     checkbox.addEventListener("change", () => { globalSettings.showOutlines = checkbox.checked; });
 }
 
+// mark-guessed-states-checkbox setup
+{
+    const checkbox = document.getElementById("mark-guessed-states-checkbox");
+    checkbox.addEventListener("change", () => { globalSettings.markGuessedStates = checkbox.checked; });
+}
+
 function rebuildGameUi() {
     // clear map
     const classesToRemove = ["good-guess", "good-guess-hide-outline", "bad-guess", "bad-guess-hide-outline"];
@@ -805,10 +820,21 @@ function rebuildGameUi() {
 
     // respect show outline setting
     for (const state of stateElements) {
-        if (game.settings.showOutlines) {
+        if (game.status === GameStatus.FINISHED || game.settings.showOutlines) {
             state.classList.remove("hide-outline"); 
         } else {
             state.classList.add("hide-outline"); 
+        }
+    }
+
+    for (const guess of game.guesses) {
+        const stateElement = stateElements[guess.stateId];
+        if (game.status === GameStatus.FINISHED || game.settings.markGuessedStates) {
+            if (guess.correct) {
+                stateElement.classList.add("good-guess");
+            } else {
+                stateElement.classList.add("bad-guess");
+            }
         }
     }
 }
@@ -834,7 +860,10 @@ function guessAttempt(stateElement) {
     const stateId = stateAbbreviationToId(stateElement.id);
 
     if (game.status !== GameStatus.ONGOING) return;
-    if (stateWasPreviouslyGuessed(stateId)) return;
+
+    // The point of not showing to the users which states they guessed is to give them more chances to make mistakes
+    // as the games goes on. Thus, they should be able to guess again the same state.
+    if (game.settings.markGuessedStates && stateWasPreviouslyGuessed(stateId)) return;
 
     const targetStateId = currentStateToGuess();
     const isGuessCorrect = stateId === targetStateId;
@@ -856,16 +885,13 @@ function guessAttempt(stateElement) {
 
         const el = document.getElementById("result");
         el.innerText = `${correctGuesses}/50`;
+
     } else {
         const nextStateToGuess = currentStateToGuess();
         setNextGuessUi(stateNames[nextStateToGuess]);
     }
 
-    if (guess.correct) {
-        stateElement.classList.add("good-guess");
-    } else {
-        stateElement.classList.add("bad-guess");
-    }
+    rebuildGameUi();
 }
 
 </script>
