@@ -31,6 +31,7 @@
     .bad-guess  { fill: #ba3c3c; }
     .bad-guess-hide-outline { stroke: #ba3c3c; }
 
+    /* See: https://css-irl.info/css-halftone-patterns/ */
     .halftone {
       background-image: radial-gradient(
         circle at center,
@@ -141,8 +142,9 @@
 
 <div id="game-window" class="halftone window">
     <div id="header">
-        <div >
-            <button id="new-game-button" onclick="startNewGame()" class="cutive-mono-regular">new game</button>
+        <div style="display: flex; gap: 0.3em">
+            <button id="new-game-button" onclick="startNewGame()" class="cutive-mono-regular">start</button>
+            <button id="reset-game-button" onclick="resetGame()" class="cutive-mono-regular">reset</button>
         </div>
         <div>
             <span id="nextGuess"></span>
@@ -800,13 +802,19 @@ function updateTimerUi() {
 // show-outlines-checkbox setup
 {
     const checkbox = document.getElementById("show-outlines-checkbox");
-    checkbox.addEventListener("change", () => { globalSettings.showOutlines = checkbox.checked; });
+    checkbox.addEventListener("change", () => {
+        globalSettings.showOutlines = checkbox.checked;
+        if (game.status === GameStatus.NOT_STARTED) resetGame();
+    });
 }
 
 // mark-guessed-states-checkbox setup
 {
     const checkbox = document.getElementById("mark-guessed-states-checkbox");
-    checkbox.addEventListener("change", () => { globalSettings.markGuessedStates = checkbox.checked; });
+    checkbox.addEventListener("change", () => {
+        globalSettings.markGuessedStates = checkbox.checked;
+        if (game.status === GameStatus.NOT_STARTED) resetGame();
+    });
 }
 
 function rebuildGameUi() {
@@ -842,10 +850,7 @@ function rebuildGameUi() {
 /* end of a bunch of HTML Elements */
 
 function startNewGame() {
-    game = newGame(globalSettings);
-
-    clearGameResultUi();
-    rebuildGameUi();
+    resetGame();
 
     const stateId = currentStateToGuess();
     setNextGuessUi(stateNames[stateId]);
@@ -854,6 +859,13 @@ function startNewGame() {
     game.startTime = performance.now();
 
     updateTimerUi();
+}
+
+function resetGame() {
+    game = newGame(globalSettings);
+    clearGameResultUi();
+    setNextGuessUi("");
+    rebuildGameUi();
 }
 
 function guessAttempt(stateElement) {
