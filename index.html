@@ -59,6 +59,8 @@
         background-size: cover;
         background-position: center;
 
+        overflow: hidden;
+
        /* filter: sepia(100%) saturate(300%) brightness(70%) hue-rotate(180deg); */
     }
 
@@ -86,6 +88,9 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+
+        user-select: none;
+        -webkit-user-select: none;
     }
 
     h2 {
@@ -196,6 +201,14 @@
         width: 90%;
         /* NOTE: there is no padding here to avoid messing with mouse input (movement) logging */
     }
+
+    .no-select {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .window-title-text { margin-left: 0.25em; }
+    .window-title:hover { cursor: default; }
 </style>
 
 </head>
@@ -203,8 +216,8 @@
 <body class="cutive-mono-regular">
 
 <div id="settings-window" class="window">
-    <div class="window-title">
-        <span style="margin-left: 0.25em">Settings</span>
+    <div id="settings-window-title" class="window-title">
+        <span class="window-title-text">Settings</span>
     </div>
     <div style="width:100%;display: flex; flex-direction:column;align-items:flex-start;color:white;padding: 0.25em 0">
         <label><input id="show-outlines-checkbox" type="checkbox">show outlines</label>
@@ -213,8 +226,8 @@
 </div>
 
 <div id="game-window" class="halftone window">
-    <div class="window-title">
-        <span style="margin-left: 0.25em">Quiz | USA - States</span>
+    <div id="game-window-title" class="window-title no-select">
+        <span class="window-title-text">Quiz | USA - States</span>
     </div>
 
     <div id="header">
@@ -232,7 +245,7 @@
     </div>
 
     <div id="game-window-content">
-        <div id="map">
+        <div id="map" class="no-select">
             <!-- When replacing map svg: -->
             <!-- * Remove height and width -->
 
@@ -744,6 +757,43 @@ const stateElements = [];
 }
 
 /* end of US States */
+
+function $(id) {
+    const element = document.getElementById(id);
+    if (element === null) throw Error(`Element with ID ${id} not found!`);
+    return element;
+}
+
+function makeWindowMovable(windowElement, windowTitleElement) {
+    let mouseDown = false;
+    let prevX = 0;
+    let prevY = 0;
+
+    windowTitleElement.addEventListener("mousedown", (event) => {
+        mouseDown = true;
+
+        prevX = event.clientX;
+        prevY = event.clientY;
+    });
+
+    window.addEventListener("mousemove", (event) => {
+        if (!mouseDown) return;
+
+        const newLeft = windowElement.offsetLeft + (event.clientX - prevX);
+        windowElement.style["left"] = `${newLeft}px`;
+
+        const newTop = windowElement.offsetTop + (event.clientY - prevY);
+        windowElement.style["top"] = `${newTop}px`;
+
+        prevX = event.clientX;
+        prevY = event.clientY;
+    }, false);
+
+    window.addEventListener("mouseup", () => { mouseDown = false; });
+}
+
+makeWindowMovable($("game-window"), $("game-window-title"));
+makeWindowMovable($("settings-window"), $("settings-window-title"));
 
 /* Game State */
 
