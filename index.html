@@ -31,6 +31,8 @@
     .bad-guess  { fill: #ba3c3c; }
     .bad-guess-hide-outline { stroke: #ba3c3c; }
 
+    .inspecting { fill: #bd5595; }
+
     /* See: https://css-irl.info/css-halftone-patterns/ */
     .halftone {
       background-image: radial-gradient(
@@ -227,7 +229,7 @@
 
 <div id="game-window" class="halftone window">
     <div id="game-window-title" class="window-title no-select">
-        <span class="window-title-text">Quiz | USA - States</span>
+        <span class="window-title-text">Quiz | USA &mdash; States</span>
     </div>
 
     <div id="header">
@@ -1061,11 +1063,22 @@ function trackMouseMovement(event) {
     game.inputLogs.push(inputLog);
 }
 
-// onmousedown
+// mouse events
 
 {
     for (const el of stateElements) {
-        el.onmousedown = guessAttempt
+        el.onmousedown = guessAttempt;
+        el.onmouseover = (event) => {
+            if (game.status !== GameStatus.NOT_STARTED) return;
+            const stateId = stateAbbreviationToId(event.target.id);
+            setNextGuessUi(stateNames[stateId]);
+            event.target.classList.add("inspecting");
+        };
+        el.onmouseout = (event) => {
+            if (game.status !== GameStatus.NOT_STARTED) return;
+            setNextGuessUi("");
+            event.target.classList.remove("inspecting");
+        };
     }
 
     mapElement.addEventListener("mousemove", trackMouseMovement, false);
